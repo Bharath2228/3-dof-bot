@@ -1,0 +1,53 @@
+# .gitignore for arduinobot_ws
+# Ignore build artifacts and install/log folders created by colcon
+build/
+install/
+log/
+
+# Colcon/ament metadata
+.colcon/
+
+# Python
+*.py[cod]
+__pycache__/
+*.so
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Virtual environments
+.env
+.venv/
+venv/
+env/
+ENV/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Logs and backups
+*.log
+*~
+*.swp
+
+# ROS / simulation artifacts
+*.bag
+*.bag.*
+*.db3
+*.ign
+*.sdf
+*.urdf
