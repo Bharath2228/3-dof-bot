@@ -4,54 +4,84 @@ from launch_ros.parameter_descriptions import ParameterValue
 from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable, IncludeLaunchDescription
 from launch.substitutions import Command, LaunchConfiguration
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+
 import os
-from ament_index_python.packages import get_package_share_directory
 from pathlib import Path
+from ament_index_python.packages import get_package_share_directory
+
 
 def generate_launch_description():
 
     arduinobot_description_dir = get_package_share_directory("arduinobot_description")
 
     model_arg = DeclareLaunchArgument(
-        name="model", 
-        default_value=os.path.join(arduinobot_description_dir, "urdf", "arduinobot.urdf.xacro"),
-        description="Absolute path to the robot URDF file"
-        )   
-    
+        name="model",
+        default_value=os.path.join(
+            arduinobot_description_dir,
+            "urdf",
+            "arduinobot.urdf.xacro"
+        ),
+        description="Absolute path to the robot URDF/Xacro file"
+    )
+
     gazebo_resource_path = SetEnvironmentVariable(
         name="GZ_SIM_RESOURCE_PATH",
         value=[
             str(Path(arduinobot_description_dir).parent.resolve())
         ]
     )
-    
-    robot_description = ParameterValue(Command(["xacro ", LaunchConfiguration("model")]))
+
+    ros_distro = os.environ["ROS_DISTRO"]
+
+    is_ignition = "True" if ros_distro == "humble" else "False"
+
+    if ros_distro == "humble":
+        gz_args = "-v 4 -r empty.sdf"
+    else:
+        gz_args = "-v 4 -r empty.sdf --physics-engine gz-physics-bullet-featherstone-plugin"
+
+    robot_description = ParameterValue(
+        Command([
+            "xacro ",
+            LaunchConfiguration("model"),
+            " is_ignition:=",
+            is_ignition
+        ]),
+        value_type=str
+    )
 
     robot_state_publisher = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
-        parameters=[{"robot_description": robot_description,
-                     "use_sim_time": True}]
+        parameters=[
+            {
+                "robot_description": robot_description,
+                "use_sim_time": True
+            }
+        ]
     )
 
     gazebo = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([
+        PythonLaunchDescriptionSource(
             os.path.join(
                 get_package_share_directory("ros_gz_sim"),
-                "launch"
-            ), "/gz_sim.launch.py"]
+                "launch",
+                "gz_sim.launch.py"
+            )
         ),
-        launch_arguments=[
-            ("gz_args", [" -v 4 -r empty.sdf"])
-        ]
+        launch_arguments={
+            "gz_args": gz_args
+        }.items()
     )
 
     gz_spawn_entity = Node(
         package="ros_gz_sim",
         executable="create",
         output="screen",
-        arguments=["-topic", "robot_description", 
-                   "-name", "arduinobot"]
+        arguments=[
+            "-topic", "robot_description",
+            "-name", "arduinobot"
+        ]
     )
 
     gz_ros2_bridge = Node(
