@@ -47,11 +47,6 @@
             <state_interface name="position"/>
         </joint>
 
-        # replicating the joint 4
-        <joint name="joint_5">
-            <param name="mimic">joint_4</param>
-            <param name="multiplier"> -1 </param> # this will help in moving it in the oppsite direction of the joint 4
-        </joint>
 
     </ros2_control>
 

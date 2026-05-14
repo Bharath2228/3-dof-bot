@@ -1,36 +1,31 @@
+import os
 from launch import LaunchDescription
 from launch_ros.actions import Node
-
-import os
 from launch_ros.parameter_descriptions import ParameterValue
 from launch.substitutions import Command
 from ament_index_python.packages import get_package_share_directory
 
+
 def generate_launch_description():
-    
+
     robot_description = ParameterValue(
         Command(
             [
                 "xacro ",
-                os.path.join(get_package_share_directory("arduinobot_description"), "urdf", "arduinobot.urdf.xacro")
+                os.path.join(
+                    get_package_share_directory("arduinobot_description"),
+                    "urdf",
+                    "arduinobot.urdf.xacro",
+                ),
             ]
         ),
-        value_type=str
+        value_type=str,
     )
 
-    robot_state_publisher = Node(
+    robot_state_publisher_node = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
-        parameters=[{"robot_description": robot_description}]
-    )
-
-    controller_manager = Node(
-        package="controller_manager",
-        executable="ros2_control_node",
-        parameters=[
-            {"robot_description": robot_description},
-            os.path.join(get_package_share_directory("arduinobot_controller"), "config", "arduinobot_controller.yaml")
-        ]
+        parameters=[{"robot_description": robot_description}],
     )
 
     joint_state_broadcaster_spawner = Node(
@@ -39,34 +34,27 @@ def generate_launch_description():
         arguments=[
             "joint_state_broadcaster",
             "--controller-manager",
-            "/controller_manager"
-        ]
+            "/controller_manager",
+        ],
     )
 
     arm_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=[
-            "arm_controller",
-            "--controller-manager",
-            "/controller_manager"
-        ]
+        arguments=["arm_controller", "--controller-manager", "/controller_manager"],
     )
-    
+
     gripper_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=[
-            "gripper_controller",
-            "--controller-manager",
-            "/controller_manager"
+        arguments=["gripper_controller", "--controller-manager", "/controller_manager"],
+    )
+
+    return LaunchDescription(
+        [
+            robot_state_publisher_node,
+            joint_state_broadcaster_spawner,
+            arm_controller_spawner,
+            gripper_controller_spawner,
         ]
     )
-        
-    return LaunchDescription([
-        robot_state_publisher,
-        controller_manager,
-        joint_state_broadcaster_spawner,
-        arm_controller_spawner,
-        gripper_controller_spawner
-    ])
