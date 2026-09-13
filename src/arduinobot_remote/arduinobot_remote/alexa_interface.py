@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import os
+from dotenv import load_dotenv
 from flask import Flask
 from ask_sdk_core.skill_builder import SkillBuilder
 from flask_ask_sdk.skill_adapter import SkillAdapter
@@ -12,6 +14,9 @@ import rclpy
 from rclpy.node import Node
 import threading
 from rclpy.action import ActionClient
+
+load_dotenv()
+ALEXA_SKILL_ID = os.environ["ALEXA_SKILL_ID"]
 
 threading.Thread(target=lambda: rclpy.init()).start()
 action_client = ActionClient(Node('alexa_interface'), ArduinobotTask, "task_server")
@@ -120,7 +125,7 @@ skill_builder.add_request_handler(WakeIntentHandler())
 skill_builder.add_exception_handler(AllExceptionHandler())
 
 skill_adapter = SkillAdapter(
-    skill=skill_builder.create(), skill_id="amzn1.ask.skill.11928780-3cf6-411f-ab40-9848f285226b", app=app)
+    skill=skill_builder.create(), skill_id=ALEXA_SKILL_ID, app=app)
 
 @app.route("/")
 def invoke_skill():
