@@ -8,6 +8,7 @@
         <joint name="joint_2"/>
         <joint name="joint_3"/>
         <joint name="horizontal_arm_to_claw_support"/>
+        <joint name="gripper_tcp_joint"/>
     </group>
     <group name="gripper">
         <joint name="joint_4"/>
