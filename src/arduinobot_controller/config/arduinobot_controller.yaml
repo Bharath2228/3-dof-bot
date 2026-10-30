@@ -1,6 +1,6 @@
 controller_manager:
   ros__parameters:
-    update_rate: 10 #frequency of the control loop will be updated and executed
+    update_rate: 100 #frequency of the control loop will be updated and executed
 
     arm_controller:
       type: joint_trajectory_controller/JointTrajectoryController
@@ -24,7 +24,7 @@ arm_controller:
 
     state_interfaces:
       - position
-    
+
     open_loop_control: true
     allow_integration_in_goal_trajectories: true
 
@@ -32,12 +32,12 @@ gripper_controller:
   ros__parameters:
     joints:
       - joint_4 # we dont need joint 5 because it simply copies the behaviour of the j4
-    
+
     command_interfaces:
      - position
 
     state_interfaces:
       - position
-    
+
     open_loop_control: true
     allow_integrartion_in_goal_trajectories: true

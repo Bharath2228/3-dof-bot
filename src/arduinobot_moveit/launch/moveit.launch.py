@@ -10,7 +10,7 @@ from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
 
     is_sim = LaunchConfiguration("is_sim")
-    
+
     is_sim_arg = DeclareLaunchArgument(
         "is_sim",
         default_value="True"
@@ -26,6 +26,7 @@ def generate_launch_description():
         )
         .robot_description_semantic(file_path="config/arduinobot.srdf")
         .trajectory_execution(file_path="config/moveit_controllers.yaml")
+        .planning_pipelines(pipelines=["ompl", "pilz_industrial_motion_planner"])
         .to_moveit_configs()
     )
 
@@ -33,7 +34,7 @@ def generate_launch_description():
         package="moveit_ros_move_group",
         executable="move_group",
         output="screen",
-        parameters=[moveit_config.to_dict(), 
+        parameters=[moveit_config.to_dict(),
                     {"use_sim_time": is_sim},
                     {"publish_robot_description_semantic": True}],
         arguments=["--ros-args", "--log-level", "info"],
@@ -41,11 +42,11 @@ def generate_launch_description():
 
     # RViz
     rviz_config = os.path.join(
-        get_package_share_directory("arduinobot_moveit"),
-            "config",
-            "moveit.rviz",
+        get_package_share_directory("arduinobot_description"),
+        "rviz",
+        "display.rviz",
     )
-    
+
     rviz_node = Node(
         package="rviz2",
         executable="rviz2",
@@ -57,13 +58,14 @@ def generate_launch_description():
             moveit_config.robot_description_semantic,
             moveit_config.robot_description_kinematics,
             moveit_config.joint_limits,
+            {"use_sim_time": is_sim},
         ],
     )
 
     return LaunchDescription(
         [
             is_sim_arg,
-            move_group_node, 
+            move_group_node,
             rviz_node
         ]
     )
