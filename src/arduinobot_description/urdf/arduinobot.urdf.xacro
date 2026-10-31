@@ -11,6 +11,20 @@
     <xacro:property name="effort" value="30.0" />
     <xacro:property name="velocity" value="10.0" />
 
+    <!-- Materials (colors) -->
+    <material name="dark_gray">
+        <color rgba="0.15 0.15 0.15 1"/>
+    </material>
+    <material name="silver">
+        <color rgba="0.6 0.6 0.6 1"/>
+    </material>
+    <material name="black">
+        <color rgba="0.05 0.05 0.05 1"/>
+    </material>
+    <material name="orange">
+        <color rgba="0.95 0.45 0.05 1"/>
+    </material>
+
     <!-- Useful Macros -->
     <xacro:macro name="default_inertial" params="mass">
         <inertial>
@@ -33,6 +47,7 @@
             <geometry>
                 <mesh filename="package://arduinobot_description/meshes/basement.STL" scale="0.01 0.01 0.01"/>
             </geometry>
+            <material name="dark_gray"/>
         </visual>
         <collision>
             <origin rpy="0 0 0" xyz="-0.5 -0.5 0"/>
@@ -49,6 +64,7 @@
             <geometry>
                 <mesh filename="package://arduinobot_description/meshes/base_plate.STL" scale="0.01 0.01 0.01"/>
             </geometry>
+            <material name="silver"/>
         </visual>
         <collision>
             <origin rpy="0 0 0" xyz="-0.39 -0.39 -0.56"/>
@@ -65,6 +81,7 @@
             <geometry>
                 <mesh filename="package://arduinobot_description/meshes/forward_drive_arm.STL" scale="0.01 0.01 0.01"/>
             </geometry>
+            <material name="dark_gray"/>
         </visual>
         <collision>
             <origin rpy=" 0 -${PI / 2} ${PI / 2}" xyz="0.19 0.06 -0.08"/>
@@ -81,6 +98,7 @@
             <geometry>
                 <mesh filename="package://arduinobot_description/meshes/horizontal_arm.STL" scale="0.01 0.01 0.01"/>
             </geometry>
+            <material name="black"/>
         </visual>
         <collision>
             <origin rpy="${PI / 2} 0 ${PI / 2}" xyz="-0.03 -0.4 -0.06"/>
@@ -97,6 +115,7 @@
             <geometry>
                 <mesh filename="package://arduinobot_description/meshes/claw_support.STL" scale="0.01 0.01 0.01"/>
             </geometry>
+            <material name="silver"/>
         </visual>
         <collision>
             <origin rpy="0 0 ${PI / 2}" xyz="0 -0.05 -0.15"/>
@@ -113,6 +132,7 @@
             <geometry>
                 <mesh filename="package://arduinobot_description/meshes/right_finger.STL" scale="0.01 0.01 0.01"/>
             </geometry>
+            <material name="orange"/>
         </visual>
         <collision>
             <origin rpy="0 0 -${PI / 2}" xyz="-0.1 0.50 -0.1"/>
@@ -129,6 +149,7 @@
             <geometry>
                 <mesh filename="package://arduinobot_description/meshes/left_finger.STL" scale="0.01 0.01 0.01"/>
             </geometry>
+            <material name="orange"/>
         </visual>
         <collision>
             <origin rpy="0 0 -${PI / 2}" xyz="-0.04 0.50 -0.1"/>
@@ -146,6 +167,7 @@
             <geometry>
                 <mesh filename="package://arduinobot_description/meshes/pi_camera.STL" scale="0.01 0.01 0.01"/>
             </geometry>
+            <material name="black"/>
         </visual>
         <collision>
             <origin rpy="-1.57 0 0" xyz="-0.15 0.0 0.1"/>
@@ -161,6 +183,7 @@
             <geometry>
                 <mesh filename="package://arduinobot_description/meshes/pi_camera.STL" scale="0.01 0.01 0.01"/>
             </geometry>
+            <material name="black"/>
         </visual>
         <collision>
             <origin rpy="0 1.57 0" xyz="-0.15 0.0 0.1"/>
@@ -233,7 +256,7 @@
     <joint name="gripper_tcp_joint" type="fixed">
         <parent link="claw_support"/>
         <child link="gripper_tcp"/>
-        <origin xyz="-0.129 0.457 -0.124" rpy="0 0 0"/>
+        <origin xyz="-0.124 0.543 -0.108" rpy="0 0 0"/>
     </joint>
 
     <joint name ="rgb_camera_joint" type="fixed">

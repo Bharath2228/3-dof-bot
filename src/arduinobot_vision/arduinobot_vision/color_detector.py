@@ -47,7 +47,7 @@ class ColorDetector(Node):
         blue_upper = np.array([130, 255, 255])
         blue_centroid = self.find_centroid(hsv, blue_lower, blue_upper)
 
-        block_height = 0.475
+        block_height = 0.45
 
         if red_centroid:
             wx, wy = self.pixel_to_world(*red_centroid)

@@ -3,6 +3,10 @@
 #include <rclcpp_components/register_node_macro.hpp>
 #include "arduinobot_msgs/action/arduinobot_task.hpp"
 #include <moveit/move_group_interface/move_group_interface.hpp>
+#include <moveit/planning_scene_interface/planning_scene_interface.hpp>
+#include <moveit_msgs/msg/collision_object.hpp>
+#include <shape_msgs/msg/solid_primitive.hpp>
+#include <geometry_msgs/msg/pose.hpp>
 
 #include <memory>
 #include <thread>
@@ -23,11 +27,32 @@ public:
         this, "task_server", std::bind(&TaskServer::goalCallback, this, _1, _2),
         std::bind(&TaskServer::cancelCallback, this, _1),
         std::bind(&TaskServer::acceptedCallback, this, _1));
+
+    moveit_msgs::msg::CollisionObject table_object;
+    table_object.header.frame_id = "base_link";
+    table_object.id = "table";
+
+    shape_msgs::msg::SolidPrimitive table_primitive;
+    table_primitive.type = table_primitive.BOX;
+    table_primitive.dimensions = {1.5, 1.5, 0.4};
+
+    geometry_msgs::msg::Pose table_pose;
+    table_pose.position.x = 0.0;
+    table_pose.position.y = 2.0;
+    table_pose.position.z = 0.2;
+    table_pose.orientation.w = 1.0;
+
+    table_object.primitives.push_back(table_primitive);
+    table_object.primitive_poses.push_back(table_pose);
+    table_object.operation = table_object.ADD;
+
+    planning_scene_interface_.applyCollisionObject(table_object);
   }
 
 private:
   rclcpp_action::Server<arduinobot_msgs::action::ArduinobotTask>::SharedPtr action_server_;
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> arm_move_group_, gripper_move_group_;
+  moveit::planning_interface::PlanningSceneInterface planning_scene_interface_;
   std::vector<double> arm_joint_goal_, gripper_joint_goal_;
 
   rclcpp_action::GoalResponse goalCallback(
@@ -60,6 +85,66 @@ private:
     std::thread{ std::bind(&TaskServer::execute, this, _1), goal_handle }.detach();
   }
 
+  bool planAndMove(std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group)
+  {
+    moveit::planning_interface::MoveGroupInterface::Plan plan;
+    bool success = (move_group->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS);
+    if (success) {
+      move_group->move();
+    }
+    return success;
+  }
+
+  void executeDynamicPick(const std::shared_ptr<rclcpp_action::ServerGoalHandle<arduinobot_msgs::action::ArduinobotTask>> goal_handle)
+  {
+    double x = goal_handle->get_goal()->target_x;
+    double y = goal_handle->get_goal()->target_y;
+    double z = goal_handle->get_goal()->target_z;
+
+    std::vector<double> gripper_open = {-0.7, 0.7};
+    std::vector<double> gripper_closed = {-0.102, 0.102};
+
+    auto result = std::make_shared<arduinobot_msgs::action::ArduinobotTask::Result>();
+
+    gripper_move_group_->setStartState(*gripper_move_group_->getCurrentState());
+    gripper_move_group_->setJointValueTarget(gripper_open);
+    if (!planAndMove(gripper_move_group_)) {
+      RCLCPP_ERROR(get_logger(), "Failed to open gripper");
+      return;
+    }
+
+    arm_move_group_->setStartState(*arm_move_group_->getCurrentState());
+    arm_move_group_->setPositionTarget(x, y, z + 0.10, "gripper_tcp");
+    if (!planAndMove(arm_move_group_)) {
+      RCLCPP_ERROR(get_logger(), "Failed to reach approach pose");
+      return;
+    }
+
+    arm_move_group_->setStartState(*arm_move_group_->getCurrentState());
+    arm_move_group_->setPositionTarget(x, y, z + 0.09, "gripper_tcp");
+    if (!planAndMove(arm_move_group_)) {
+      RCLCPP_ERROR(get_logger(), "Failed to descend to object");
+      return;
+    }
+
+    gripper_move_group_->setStartState(*gripper_move_group_->getCurrentState());
+    gripper_move_group_->setJointValueTarget(gripper_closed);
+    if (!planAndMove(gripper_move_group_)) {
+      RCLCPP_ERROR(get_logger(), "Failed to close gripper");
+      return;
+    }
+
+    arm_move_group_->setStartState(*arm_move_group_->getCurrentState());
+    arm_move_group_->setPositionTarget(x, y, z + 0.80, "gripper_tcp");
+    if (!planAndMove(arm_move_group_)) {
+      RCLCPP_ERROR(get_logger(), "Failed to lift object");
+      return;
+    }
+
+    result->success = true;
+    goal_handle->succeed(result);
+  }
+
   void execute(const std::shared_ptr<rclcpp_action::ServerGoalHandle<arduinobot_msgs::action::ArduinobotTask>> goal_handle)
   {
     RCLCPP_INFO(get_logger(), "Executing goal");
@@ -69,6 +154,11 @@ private:
     if(!gripper_move_group_){
         gripper_move_group_ = std::make_shared<moveit::planning_interface::MoveGroupInterface>(shared_from_this(), "gripper");
     }
+    if (goal_handle->get_goal()->task_number == 3) {
+        executeDynamicPick(goal_handle);
+        return;
+    }
+
     auto result = std::make_shared<arduinobot_msgs::action::ArduinobotTask::Result>();
 
     if(goal_handle->get_goal()->task_number == 0){
@@ -79,7 +169,7 @@ private:
         gripper_joint_goal_ = {0.0, 0.0};
     } else if(goal_handle->get_goal()->task_number == 2){
         arm_joint_goal_ = {-1.57, -0.0, -0.9};
-        gripper_joint_goal_ = {0.0, 0.0}; 
+        gripper_joint_goal_ = {0.0, 0.0};
     } else {
         RCLCPP_ERROR(get_logger(), "Invalide Task Number");
         return;
@@ -87,10 +177,10 @@ private:
 
     arm_move_group_->setStartState(*arm_move_group_->getCurrentState());
     gripper_move_group_->setStartState(*gripper_move_group_->getCurrentState());
-    
+
     bool arm_within_bounds = arm_move_group_->setJointValueTarget(arm_joint_goal_);
     bool gripper_within_bounds = gripper_move_group_->setJointValueTarget(gripper_joint_goal_);
-
+    
     if(!arm_within_bounds && !gripper_within_bounds){
         RCLCPP_ERROR(get_logger(), "Target position out of boundaries");
         return;
