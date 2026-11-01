@@ -23,7 +23,8 @@ told it the table existed, a TCP point I had to remeasure three times because
 the gripper's fingertip gap moves as the fingers close. All of that (and the
 reasoning behind each fix, not just the fix itself) is written up in
 [`notes.md`](notes.md) — if you're trying to learn from this repo rather than
-just run it, that's the file to read.
+just run it, that's the file to read. For where the project is headed next
+(it's still growing), see [`ROADMAP.md`](ROADMAP.md).
 
 ## Packages
 
