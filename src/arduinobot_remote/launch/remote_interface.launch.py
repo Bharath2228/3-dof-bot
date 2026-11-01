@@ -43,8 +43,22 @@ def generate_launch_description():
 
     )
 
+    color_detector_node = Node(
+        package="arduinobot_vision",
+        executable="color_detector",
+        parameters=[{"use_sim_time": is_sim}],
+    )
+
+    command_interpreter_node = Node(
+        package="arduinobot_remote",
+        executable="command_interpreter.py",
+        parameters=[{"use_sim_time": is_sim}],
+    )
+
     return LaunchDescription([
         is_sim_arg,
         task_server_node,
-        alexa_interface_node
+        alexa_interface_node,
+        color_detector_node,
+        command_interpreter_node,
     ])

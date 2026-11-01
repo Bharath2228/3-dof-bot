@@ -12,6 +12,7 @@ class CommandInterpreter(Node):
         super().__init__('command_interpreter')
 
         self.latest_positions = {}
+        self.last_color = None
 
         self.create_subscription(PointStamped, '/detected_objects/red', self.make_position_callback('red'), 10)
         self.create_subscription(PointStamped, '/detected_objects/blue', self.make_position_callback('blue'), 10)
@@ -25,18 +26,32 @@ class CommandInterpreter(Node):
             self.latest_positions[color] = (msg.point.x, msg.point.y, msg.point.z)
         return callback
 
-    def command_callback(self, msg):
-        text = msg.data.lower()
+    def extract_target_color(self, text):
+        text = text.lower()
 
-        target_color = None
-        if 'red' in text:
-            target_color = 'red'
-        elif 'blue' in text:
-            target_color = 'blue'
+        color_keywords = {
+            'red': ['red', 'crimson'],
+            'blue': ['blue', 'navy', 'azure'],
+        }
+
+        for color, keywords in color_keywords.items():
+            for keyword in keywords:
+                if keyword in text:
+                    return color
+
+        if 'it' in text.split() or 'that one' in text:
+            return self.last_color
+
+        return None
+
+    def command_callback(self, msg):
+        target_color = self.extract_target_color(msg.data)
 
         if target_color is None:
             self.get_logger().info('No known color found in command')
             return
+
+        self.last_color = target_color
 
         if target_color not in self.latest_positions:
             self.get_logger().info(f'No detection yet for {target_color}')
