@@ -4,16 +4,38 @@ A ROS 2 workspace for a 3-DOF robotic arm: URDF/description, Gazebo/Ignition
 simulation, `ros2_control`-based control, MoveIt motion planning, and a
 remote/voice (Alexa) interface.
 
+## Why this exists
+
+I started this as a straightforward "learn ROS2 by building a 3-DOF arm"
+project — URDF, `ros2_control`, MoveIt, the usual pipeline. Once the arm could
+move on command from Alexa, though, the 3 hardcoded poses it responded to
+started bugging me. "Pick," "sleep," "wake" — fine for a demo, but it's not
+actually *doing* anything with the world around it, just replaying fixed
+joint angles on cue.
+
+So I added a camera, taught it to find colored blocks, and wired that into
+the same voice interface — the arm now picks up whichever block you actually
+ask for, wherever it currently is, instead of reaching for a memorized spot.
+Getting there took a lot more wrong turns than I expected going in: a camera
+sensor that turned out to look sideways instead of down, a MoveIt planner
+that happily planned the arm straight through a table because nobody ever
+told it the table existed, a TCP point I had to remeasure three times because
+the gripper's fingertip gap moves as the fingers close. All of that (and the
+reasoning behind each fix, not just the fix itself) is written up in
+[`notes.md`](notes.md) — if you're trying to learn from this repo rather than
+just run it, that's the file to read.
+
 ## Packages
 
 | Package | Description |
 |---|---|
 | `arduinobot_bringup` | Top-level launch files that bring up the simulated robot. |
-| `arduinobot_description` | URDF/xacro robot description, meshes, and `ros2_control` hardware interface. |
+| `arduinobot_description` | URDF/xacro robot description, meshes, Gazebo sensors (cameras), and `ros2_control` hardware interface. |
 | `arduinobot_controller` | Launch files and configuration for spawning `ros2_control` controllers (joint state broadcaster, arm, gripper). |
 | `arduinobot_moveit` | MoveIt configuration for motion planning. |
-| `arduinobot_msgs` | Custom action/message definitions (e.g. `ArduinobotTask`). |
-| `arduinobot_remote` | Remote control interfaces, including an Alexa skill backend and a task action server. |
+| `arduinobot_msgs` | Custom action/message definitions (e.g. `ArduinobotTask`, now carrying a target XYZ for dynamic picks). |
+| `arduinobot_remote` | Remote control interfaces: the Alexa skill backend, the task action server (fixed poses + dynamic pick sequence), and the text command interpreter. |
+| `arduinobot_vision` | Camera-based color detection — finds the red/blue blocks and publishes their real-world positions. |
 | `arduinobot_cpp_examples` | Example C++ nodes. |
 
 ## Prerequisites
@@ -22,6 +44,8 @@ remote/voice (Alexa) interface.
 - Gazebo / Ignition Gazebo, matching your ROS distro
 - MoveIt 2
 - Python 3 with `pip`
+- `python3-opencv` and `cv_bridge` (usually already pulled in by `rosdep
+  install` below — needed by `arduinobot_vision` for color detection)
 - [ngrok](https://ngrok.com/) (only needed for the Alexa remote interface)
 - An Alexa developer account + skill configured in the [Alexa Developer Console](https://developer.amazon.com/alexa/console/ask) (only needed for the Alexa remote interface)
 
@@ -89,6 +113,38 @@ your local Flask server.
    (included in `simulated_robot.launch.py`) starts `alexa_interface.py`
    as a ROS node, which runs Flask on `127.0.0.1:5000`.
 
+## Vision-grounded pick & place
+
+The robot isn't limited to the 3 fixed poses anymore. There's a table with a
+red and a blue block in front of it; a camera watches the workspace from
+above, `arduinobot_vision`'s `color_detector` node finds the blocks, and
+`arduinobot_remote`'s `command_interpreter` node turns a plain-text (or
+voice) command into an actual pick-and-place sequence.
+
+- **How it finds the blocks**: HSV color thresholding on the overhead camera
+  feed, then a calibrated pixel-to-world mapping (measured by hand, not
+  computed analytically — see `notes.md` for why that turned out to matter).
+- **How it decides what you asked for**: a small keyword/synonym matcher, on
+  purpose not a paid LLM call — Claude Pro (the chat subscription) and the
+  Anthropic API are separate products with separate billing, and I didn't
+  want every test run to cost money. The parsing is isolated into one
+  function (`extract_target_color` in `command_interpreter.py`), so swapping
+  in a real LLM later is a small, contained change if I ever want it.
+- **How it actually picks something up**: `task_server` runs a 5-stage
+  sequence — open gripper, move above the block, descend, close, lift —
+  using MoveIt Cartesian IK against the gripper's actual fingertip frame, not
+  a single blind move to the block's coordinates (an early version did that,
+  and it just rammed the block instead of grasping it).
+
+Once the full stack is running (see below), try it with no Alexa setup needed
+at all:
+```bash
+ros2 topic pub --once /voice_command std_msgs/msg/String "data: 'pick up the red one'"
+```
+Or, with the Alexa skill wired up, just ask it: "pick up the blue one," "grab
+the red block," etc. — the skill now has a `PickColorIntent` with a `color`
+slot (built on `AMAZON.Color`) feeding into the exact same text pipeline.
+
 ## Launching everything (recommended order)
 
 Use three terminals:
@@ -104,9 +160,10 @@ cd ~/Desktop/Bharath/coding/3-dof-bot
 source install/setup.bash
 ros2 launch arduinobot_bringup simulated_robot.launch.py
 ```
-This brings up Gazebo/Ignition with the robot, the `ros2_control`
-controllers, MoveIt + RViz, and the remote interface (task server + Alexa
-Flask backend) all together.
+This brings up Gazebo/Ignition with the robot (cameras, table, and blocks
+included in the world), the `ros2_control` controllers, MoveIt + RViz, and
+the remote interface — task server, Alexa Flask backend, color detector, and
+command interpreter — all in one launch. Nothing extra to run by hand.
 
 Watch this terminal's output for a few seconds after launch:
 - `[alexa_interface.py-N]` should **not** print a traceback and should
@@ -181,3 +238,26 @@ Watch this terminal's output for a few seconds after launch:
   need to open the skill with its invocation name first in that CLI
   session (`open <invocation name>`); bare intent utterances only resolve
   inside an active session.
+
+- **The arm "successfully" plans a path straight through the table** — no
+  collision error, nothing — because MoveIt's planner only avoids obstacles
+  it actually knows about (its own "planning scene"), which is completely
+  separate from whatever Gazebo is physically simulating. A table that only
+  exists in the SDF world is invisible to MoveIt. Fix: register it as a
+  `moveit_msgs::msg::CollisionObject` via `PlanningSceneInterface` (done once,
+  in `task_server`'s constructor) with the same size/pose as the real table.
+
+- **A Gazebo camera points sideways instead of where you aimed it** — a
+  camera sensor's "forward" is its link's local **+X** axis by default, not
+  +Z like the ROS "optical frame" convention you might expect. `rpy="0 0 0"`
+  on the mounting joint leaves it pointed along +X, which is sideways
+  relative to most robots. Check the actual aim with the sensor's
+  `visualize:true` frustum cone in the Gazebo GUI — don't just trust the
+  rotation math, a sign error here is easy to make and easy to miss.
+
+- **The gripper's grasp point drifts between measurements** — if you're
+  using RViz's "Publish Point" tool to measure a point near the fingertips
+  (e.g. for a TCP frame), remember the fingers *rotate*, they don't slide —
+  the visual gap between them shifts with the gripper's joint angle. Measure
+  at the angle the gripper will actually be at during a real grasp, zoom in
+  close before clicking, and expect to redo it at least once.
