@@ -49,8 +49,6 @@ htmlcov/
 *.bag.*
 *.db3
 *.ign
-*.sdf
-*.urdf
 
 
 # additional
