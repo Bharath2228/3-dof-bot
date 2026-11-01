@@ -22,7 +22,7 @@ def generate_launch_description():
             "arduinobot.urdf.xacro"
         ),
         description="Absolute path to the robot URDF/Xacro file"
-    )  
+    )
 
     world_path = os.path.join(
         arduinobot_description_dir,

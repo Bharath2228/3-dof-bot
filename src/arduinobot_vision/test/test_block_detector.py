@@ -29,7 +29,7 @@ def test_find_centroid_detects_synthetic_square():
     centroid = detector.find_centroid(image, lower, upper)
 
     assert centroid == pytest.approx((30, 40), abs=1)
-    
+
 
 def test_find_centroid_returns_none_when_no_match():
     detector = BlockDetector()

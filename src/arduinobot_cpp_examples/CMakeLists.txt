@@ -23,7 +23,7 @@ ament_target_dependencies(simple_parameter rclcpp)
 add_executable(simple_moveit_interface src/simple_moveit_interface.cpp)
 ament_target_dependencies(simple_moveit_interface rclcpp moveit_ros_planning_interface)
 
-install(TARGETS 
+install(TARGETS
   simple_publisher
   simple_subscriber
   simple_parameter
@@ -31,6 +31,7 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
+  set(ament_cmake_flake8_CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../../tools/flake8/ament_flake8.ini")
   find_package(ament_lint_auto REQUIRED)
   set(ament_cmake_copyright_FOUND TRUE)
   set(ament_cmake_cpplint_FOUND TRUE)

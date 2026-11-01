@@ -14,8 +14,10 @@ class CommandInterpreter(Node):
         self.latest_positions = {}
         self.last_color = None
 
-        self.create_subscription(PointStamped, '/detected_objects/red', self.make_position_callback('red'), 10)
-        self.create_subscription(PointStamped, '/detected_objects/blue', self.make_position_callback('blue'), 10)
+        self.create_subscription(
+            PointStamped, '/detected_objects/red', self.make_position_callback('red'), 10)
+        self.create_subscription(
+            PointStamped, '/detected_objects/blue', self.make_position_callback('blue'), 10)
         self.create_subscription(String, '/voice_command', self.command_callback, 10)
 
         self.action_client = ActionClient(self, ArduinobotTask, 'task_server')
@@ -67,6 +69,7 @@ class CommandInterpreter(Node):
 
         self.action_client.send_goal_async(goal)
         self.get_logger().info(f'Sent pick goal for {target_color} at ({x:.3f}, {y:.3f}, {z:.3f})')
+
 
 def main(args=None):
     rclpy.init(args=args)

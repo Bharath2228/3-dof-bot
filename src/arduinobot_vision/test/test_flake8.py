@@ -13,13 +13,16 @@
 # limitations under the License.
 
 from ament_flake8.main import main_with_errors
+import os
 import pytest
 
 
 @pytest.mark.flake8
 @pytest.mark.linter
 def test_flake8():
-    rc, errors = main_with_errors(argv=[])
+    config_file = os.path.join(
+        os.path.dirname(__file__), '..', '..', '..', 'tools', 'flake8', 'ament_flake8.ini')
+    rc, errors = main_with_errors(argv=['--config', config_file])
     assert rc == 0, \
         'Found %d code style errors / warnings:\n' % len(errors) + \
         '\n'.join(errors)

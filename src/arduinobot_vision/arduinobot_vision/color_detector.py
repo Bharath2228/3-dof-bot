@@ -42,10 +42,14 @@ class ColorDetector(Node):
 
         self.detector = BlockDetector(
             red_ranges=(
-                (np.array(self.get_parameter('red_range1_low').value), np.array(self.get_parameter('red_range1_high').value)),
-                (np.array(self.get_parameter('red_range2_low').value), np.array(self.get_parameter('red_range2_high').value)),
+                (np.array(self.get_parameter('red_range1_low').value),
+                 np.array(self.get_parameter('red_range1_high').value)),
+                (np.array(self.get_parameter('red_range2_low').value),
+                 np.array(self.get_parameter('red_range2_high').value)),
             ),
-            blue_range=(np.array(self.get_parameter('blue_range_low').value), np.array(self.get_parameter('blue_range_high').value)),
+            blue_range=(
+                np.array(self.get_parameter('blue_range_low').value),
+                np.array(self.get_parameter('blue_range_high').value)),
             ref_u=self.get_parameter('ref_u').value,
             ref_v=self.get_parameter('ref_v').value,
             ref_x=self.get_parameter('ref_x').value,

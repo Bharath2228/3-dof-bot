@@ -6,15 +6,17 @@ from launch.substitutions import Command, LaunchConfiguration
 import os
 from ament_index_python.packages import get_package_share_directory
 
+
 def generate_launch_description():
     model_arg = DeclareLaunchArgument(
-        name="model", 
-        default_value=os.path.join(get_package_share_directory("arduinobot_description"), 
+        name="model",
+        default_value=os.path.join(get_package_share_directory("arduinobot_description"),
                                    "urdf", "arduinobot.urdf.xacro"),
         description="Absolute path to the robot URDF file"
         )
-    
-    robot_description = ParameterValue(Command(["xacro ", LaunchConfiguration("model")]), value_type=str)
+
+    robot_description = ParameterValue(
+        Command(["xacro ", LaunchConfiguration("model")]), value_type=str)
 
     robot_state_publisher = Node(
         package="robot_state_publisher",
@@ -32,7 +34,7 @@ def generate_launch_description():
         executable="rviz2",
         name="rviz2",
         output="screen",
-        arguments=["-d", os.path.join(get_package_share_directory("arduinobot_description"), 
+        arguments=["-d", os.path.join(get_package_share_directory("arduinobot_description"),
                                       "rviz", "display.rviz")]
     )
 
