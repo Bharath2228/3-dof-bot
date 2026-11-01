@@ -1,0 +1,15 @@
+color_detector:
+  ros__parameters:
+    red_range1_low: [0, 100, 100]
+    red_range1_high: [10, 255, 255]
+    red_range2_low: [170, 100, 100]
+    red_range2_high: [180, 255, 255]
+    blue_range_low: [100, 100, 100]
+    blue_range_high: [130, 255, 255]
+    ref_u: 291
+    ref_v: 225
+    ref_x: 0.1
+    ref_y: 1.5
+    scale_x: -135.0
+    scale_y: -132.0
+    block_height: 0.45

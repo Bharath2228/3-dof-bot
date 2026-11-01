@@ -43,10 +43,16 @@ def generate_launch_description():
 
     )
 
+    color_detector_params = os.path.join(
+        get_package_share_directory("arduinobot_vision"),
+        "config",
+        "color_detector_params.yaml"
+    )
+
     color_detector_node = Node(
         package="arduinobot_vision",
         executable="color_detector",
-        parameters=[{"use_sim_time": is_sim}],
+        parameters=[color_detector_params, {"use_sim_time": is_sim}],
     )
 
     command_interpreter_node = Node(

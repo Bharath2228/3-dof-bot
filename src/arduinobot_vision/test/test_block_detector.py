@@ -7,9 +7,9 @@ from arduinobot_vision.block_detector import BlockDetector
 
 def test_pixel_to_world_at_reference_point():
     detector = BlockDetector()
-    x, y = detector.pixel_to_world(BlockDetector.REF_U, BlockDetector.REF_V)
-    assert x == BlockDetector.REF_X
-    assert y == BlockDetector.REF_Y
+    x, y = detector.pixel_to_world(detector.ref_u, detector.ref_v)
+    assert x == detector.ref_x
+    assert y == detector.ref_y
 
 
 def test_pixel_to_world_known_data_point():
@@ -25,7 +25,7 @@ def test_find_centroid_detects_synthetic_square():
     image = np.full((100, 100, 3), (60, 50, 50), dtype=np.uint8)
     cv2.rectangle(image, (20, 30), (40, 50), (5, 200, 200), -1)
 
-    lower, upper = BlockDetector.RED_RANGES[0]
+    lower, upper = detector.red_ranges[0]
     centroid = detector.find_centroid(image, lower, upper)
 
     assert centroid == pytest.approx((30, 40), abs=1)
@@ -36,7 +36,7 @@ def test_find_centroid_returns_none_when_no_match():
 
     image = np.full((100, 100, 3), (60, 50, 50), dtype=np.uint8)
 
-    lower, upper = BlockDetector.RED_RANGES[0]
+    lower, upper = detector.red_ranges[0]
     centroid = detector.find_centroid(image, lower, upper)
 
     assert centroid is None
