@@ -45,6 +45,7 @@ install(DIRECTORY
 
 install(PROGRAMS
   ${PROJECT_NAME}/alexa_interface.py
+  ${PROJECT_NAME}/command_interpreter.py
   DESTINATION lib/${PROJECT_NAME}  
 )
 

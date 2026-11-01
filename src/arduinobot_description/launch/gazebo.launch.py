@@ -22,6 +22,12 @@ def generate_launch_description():
             "arduinobot.urdf.xacro"
         ),
         description="Absolute path to the robot URDF/Xacro file"
+    )  
+
+    world_path = os.path.join(
+        arduinobot_description_dir,
+        "worlds",
+        "arduinobot_world.sdf"
     )
 
     gazebo_resource_path = SetEnvironmentVariable(
@@ -36,9 +42,9 @@ def generate_launch_description():
     is_ignition = "True" if ros_distro == "humble" else "False"
 
     if ros_distro == "humble":
-        gz_args = "-v 4 -r empty.sdf"
+        gz_args = f"-v 4 -r {world_path}"
     else:
-        gz_args = "-v 4 -r empty.sdf --physics-engine gz-physics-bullet-featherstone-plugin"
+        gz_args = f"-v 4 -r {world_path} --physics-engine gz-physics-bullet-featherstone-plugin"
 
     robot_description = ParameterValue(
         Command([
@@ -88,7 +94,9 @@ def generate_launch_description():
         package="ros_gz_bridge",
         executable="parameter_bridge",
         arguments=[
-            "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"
+            "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
+            "/arduinobot/camera/image@sensor_msgs/msg/Image[gz.msgs.Image",
+            "/arduinobot/top_camera/image@sensor_msgs/msg/Image[gz.msgs.Image"
         ]
     )
 

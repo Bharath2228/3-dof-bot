@@ -51,3 +51,7 @@ htmlcov/
 *.ign
 *.sdf
 *.urdf
+
+
+# additional
+notes.md

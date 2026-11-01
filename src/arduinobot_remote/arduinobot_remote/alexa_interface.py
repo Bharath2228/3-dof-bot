@@ -10,6 +10,7 @@ from ask_sdk_model import Response
 from ask_sdk_model.ui import SimpleCard
 from ask_sdk_core.dispatch_components import AbstractRequestHandler, AbstractExceptionHandler
 from arduinobot_msgs.action import ArduinobotTask
+from std_msgs.msg import String
 import rclpy
 from rclpy.node import Node
 import threading
@@ -19,7 +20,9 @@ load_dotenv()
 ALEXA_SKILL_ID = os.environ["ALEXA_SKILL_ID"]
 
 threading.Thread(target=lambda: rclpy.init()).start()
-action_client = ActionClient(Node('alexa_interface'), ArduinobotTask, "task_server")
+ros_node = Node('alexa_interface')
+action_client = ActionClient(ros_node, ArduinobotTask, "task_server")
+voice_command_pub = ros_node.create_publisher(String, '/voice_command', 10)
 
 app = Flask(__name__)
 
@@ -104,6 +107,31 @@ class WakeIntentHandler(AbstractRequestHandler):
         return handler_input.response_builder.response
 
 
+class PickColorIntentHandler(AbstractRequestHandler):
+    def can_handle(self, handler_input):
+        # type: (HandlerInput) -> bool
+        return is_intent_name("PickColorIntent")(handler_input)
+
+    def handle(self, handler_input):
+        # type: (HandlerInput) -> Response
+        slots = handler_input.request_envelope.request.intent.slots
+        color = slots["color"].value if "color" in slots and slots["color"].value else None
+
+        if color is None:
+            speech_text = "Sorry, I didn't catch which color."
+        else:
+            speech_text = f"Ok, picking up the {color} one"
+            msg = String()
+            msg.data = f"pick up the {color} one"
+            voice_command_pub.publish(msg)
+
+        handler_input.response_builder.speak(speech_text).set_card(
+            SimpleCard("Pick Color", speech_text)).set_should_end_session(
+            False)
+
+        return handler_input.response_builder.response
+
+
 class AllExceptionHandler(AbstractExceptionHandler):
 
     def can_handle(self, handler_input, exception):
@@ -122,6 +150,7 @@ skill_builder.add_request_handler(LaunchRequestHandler())
 skill_builder.add_request_handler(PickIntentHandler())
 skill_builder.add_request_handler(SleepIntentHandler())
 skill_builder.add_request_handler(WakeIntentHandler())
+skill_builder.add_request_handler(PickColorIntentHandler())
 skill_builder.add_exception_handler(AllExceptionHandler())
 
 skill_adapter = SkillAdapter(
