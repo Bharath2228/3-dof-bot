@@ -28,11 +28,18 @@ def generate_launch_description():
         .to_moveit_configs()
     )
 
+    task_server_params = os.path.join(
+        get_package_share_directory("arduinobot_remote"),
+        "config",
+        "task_server_params.yaml"
+    )
+
     task_server_node = Node(
         package="arduinobot_remote",
         executable="task_server_node",
         parameters=[
             moveit_config.to_dict(),
+            task_server_params,
             {"use_sim_time": is_sim}
         ],
     )

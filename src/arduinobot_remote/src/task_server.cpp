@@ -28,18 +28,24 @@ public:
         std::bind(&TaskServer::cancelCallback, this, _1),
         std::bind(&TaskServer::acceptedCallback, this, _1));
 
+    this->declare_parameter<std::vector<double>>("table_size", {1.5, 1.5, 0.4});
+    this->declare_parameter<std::vector<double>>("table_pose", {0.0, 1.5, 0.2});
+
+    auto table_size = this->get_parameter("table_size").as_double_array();
+    auto table_pose_values = this->get_parameter("table_pose").as_double_array();
+
     moveit_msgs::msg::CollisionObject table_object;
     table_object.header.frame_id = "base_link";
     table_object.id = "table";
 
     shape_msgs::msg::SolidPrimitive table_primitive;
     table_primitive.type = table_primitive.BOX;
-    table_primitive.dimensions = {1.5, 1.5, 0.4};
+    table_primitive.dimensions = {table_size[0], table_size[1], table_size[2]}; 
 
     geometry_msgs::msg::Pose table_pose;
-    table_pose.position.x = 0.0;
-    table_pose.position.y = 2.0;
-    table_pose.position.z = 0.2;
+    table_pose.position.x = table_pose_values[0];
+    table_pose.position.y = table_pose_values[1];
+    table_pose.position.z = table_pose_values[2];
     table_pose.orientation.w = 1.0;
 
     table_object.primitives.push_back(table_primitive);

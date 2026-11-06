@@ -1,0 +1,4 @@
+task_server:
+  ros__parameters:
+    table_size: [1.5, 1.5, 0.4]
+    table_pose: [0.0, 1.5, 0.2]
