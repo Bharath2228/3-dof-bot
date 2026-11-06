@@ -15,6 +15,7 @@
   <depend>moveit_ros_planning_interface</depend>
   <depend>arduinobot_msgs</depend>
   <exec_depend>arduinobot_vision</exec_depend>
+  <exec_depend>moveit_configs_utils</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

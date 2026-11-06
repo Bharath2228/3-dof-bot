@@ -114,6 +114,58 @@ your local Flask server.
    (included in `simulated_robot.launch.py`) starts `alexa_interface.py`
    as a ROS node, which runs Flask on `127.0.0.1:5000`.
 
+## Docker (reproducible setup)
+
+Getting this project running natively required a fair amount of dependency
+wrangling (see "Troubleshooting" below, and `notes.md` for the full story) —
+the `Dockerfile` at the repo root exists specifically to eliminate that for
+anyone else trying to run this. It builds a self-contained image (ROS2
+Jazzy, Gazebo, MoveIt, every `rosdep` and Python dependency this project
+needs) from a clean `osrf/ros:jazzy-desktop-full` base, so `docker build` +
+`docker run` reproduces the exact working environment without touching
+`rosdep` or `apt` by hand.
+
+**Build the image** (from the repo root, where the `Dockerfile` lives):
+```bash
+docker build -t 3-dof-bot .
+```
+
+**Run it with GUI support**, so Gazebo/RViz actually render on your screen
+instead of failing to find a display. This needs your host's X11 display
+server shared into the container, plus your actual GPU device for hardware
+rendering:
+```bash
+xhost +local:docker   # one-time per login session: trust local Docker connections
+docker run -it \
+  --env="DISPLAY=$DISPLAY" \
+  --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+  --device=/dev/dri:/dev/dri \
+  3-dof-bot
+```
+This drops you into a shell inside the container with ROS2 and the
+workspace already sourced (via `ros_entrypoint.sh`). From there:
+```bash
+ros2 launch arduinobot_bringup simulated_robot.launch.py
+```
+
+**The Alexa node (`alexa_interface.py`) needs a `.env` file to start**,
+same as native setup — `.env` is gitignored (it holds a real credential)
+and `COPY src/ src/` in the `Dockerfile` only copies `src/`, so it's never
+baked into the image either way. Pass it in at runtime instead, with
+`--env-file`:
+```bash
+docker run -it \
+  --env-file=.env \
+  --env="DISPLAY=$DISPLAY" \
+  --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+  --device=/dev/dri:/dev/dri \
+  3-dof-bot
+```
+Testing the Alexa integration for real still needs `ngrok` and a registered
+Alexa skill (see above) — that stays a host-side workflow regardless of
+Docker, since a throwaway container has no stable public address of its
+own.
+
 ## Vision-grounded pick & place
 
 The robot isn't limited to the 3 fixed poses anymore. There's a table with a
